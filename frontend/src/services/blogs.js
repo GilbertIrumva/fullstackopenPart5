@@ -1,3 +1,4 @@
+// [5.1] GET /api/blogs
 import axios from 'axios'
 
 const baseUrl = '/api/blogs'

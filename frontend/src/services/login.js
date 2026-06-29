@@ -1,3 +1,4 @@
+// [5.1] POST credentials → { token, username, name }
 import axios from 'axios'
 
 const baseUrl = '/api/login'
