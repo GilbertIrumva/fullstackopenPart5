@@ -8,37 +8,6 @@ import BlogForm from './components/BlogForm'
 import blogService from './services/blogs'
 import loginService from './services/login'
 
-// Part 5 — Bloglist frontend
-// [5.1] login form + conditional render
-// [5.2] persist login in localStorage + logout
-// [5.3] add new blog (form + POST with token)
-// [5.4] success/error notifications
-// [5.5] hide the new-blog form behind a Togglable button
-//       NOTE: 5.5 only toggles the *new-blog* form. The login form is still
-//       shown/hidden by the `if (user === null)` conditional from [5.1] —
-//       it is intentionally NOT wrapped in Togglable.
-// [5.6] extract the new-blog form into its own component (BlogForm).
-//       The form's title/author/url state now lives in BlogForm; App only
-//       owns the `createBlog` callback that performs the POST, updates the
-//       list, shows the notification, and collapses the Togglable on success.
-// [5.7] per-blog view/hide toggle lives inside the Blog component itself
-//       (it manages its own local `visible` state). App.jsx is unchanged
-//       by 5.7 beyond this note.
-// [5.8] like button: App owns an `updateBlog(id, blog)` callback that PUTs
-//       the whole blog back and swaps the updated entry into the list.
-// [5.9] "author name disappears after a like" — already handled in 5.8:
-//       the backend PUT now .populate('user', ...) the response, and
-//       updateBlog below replaces the list entry with that populated blog,
-//       so blog.user.name stays visible without reloading the page.
-// [5.10] render blogs sorted by `likes` (descending). We sort a COPY at
-//       render time so we never mutate the `blogs` state in place (Array
-//       .sort is destructive).
-// [5.11] delete button: App owns a `removeBlog(blog)` callback. The Blog
-//       component only renders the button if `currentUser.username` ===
-//       `blog.user.username`; backend still enforces it via 403.
-// [aux] axios response interceptor: any 401 caused by an expired/invalid
-//       JWT auto-logs the user out and shows a clear notification, so the
-//       like/create flows don't fail silently with "failed to update blog".
 
 
 const App = () => {
