@@ -1,22 +1,4 @@
-// [5.1] minimal blog row: title + author
-// [5.7] expandable row: title + author always visible, with a "view" button
-//       that toggles a local `visible` state to show/hide url, likes, and
-//       the blog's user. The like button is wired up but has no behavior
-//       yet (added in a later exercise). Inline styles per the FSO hint.
-// [5.8] like button now PUTs the blog back with likes + 1 via the
-//       `updateBlog` prop provided by App. We send the user as an id
-//       (not the populated object) so Mongoose stores the reference.
-// [5.11] delete button: rendered only when the logged-in user's username
-//       matches blog.user.username. Uses window.confirm() before calling
-//       the parent's `removeBlog`. The backend still 403s non-creators,
-//       so this is UX only — not a real authorization boundary.
-// [5.13] added className="blog" / "blog-header" / "blog-details" hooks so
-//       tests can locate the row and assert visibility of the toggled
-//       details block without relying on text matching alone.
-//
-// NOTE: we intentionally do NOT reuse Togglable here. Togglable hides ALL
-// its children behind the button; this component must keep title+author
-// visible at all times and only toggle the extra details.
+
 import { useState } from 'react'
 
 const blogStyle = {
