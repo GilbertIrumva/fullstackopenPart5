@@ -69,4 +69,36 @@ describe('Blog app', () => {
       ).not.toBeVisible()
     })
   })
+
+  // [5.19] Tests that require the user to be authenticated. The inner
+  // beforeEach logs in via the UI so the auth flow itself is exercised
+  // alongside whatever the test is really about.
+  describe('When logged in', () => {
+    beforeEach(async ({ page }) => {
+      await page.getByRole('textbox').first().fill('mluukkai')
+      await page.locator('input[type="password"]').fill('salainen')
+      await page.getByRole('button', { name: 'login' }).click()
+
+      // wait for the logged-in landing page to render before each test
+      await expect(
+        page.getByText('Matti Luukkainen logged in'),
+      ).toBeVisible()
+    })
+
+    test('a new blog can be created', async ({ page }) => {
+      // open the Togglable form
+      await page.getByRole('button', { name: 'create new blog' }).click()
+
+      await page.getByPlaceholder('blog title').fill('Playwright is great')
+      await page.getByPlaceholder('blog author').fill('Test Author')
+      await page.getByPlaceholder('blog url').fill('https://example.com/pw')
+      await page.getByRole('button', { name: 'create' }).click()
+
+      // the new blog row shows "title author" inside .blog-header
+      const newRow = page.locator('.blog-header', {
+        hasText: 'Playwright is great Test Author',
+      })
+      await expect(newRow).toBeVisible()
+    })
+  })
 })
