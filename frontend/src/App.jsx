@@ -26,6 +26,10 @@ import loginService from './services/login'
 //       by 5.7 beyond this note.
 // [5.8] like button: App owns an `updateBlog(id, blog)` callback that PUTs
 //       the whole blog back and swaps the updated entry into the list.
+// [5.9] "author name disappears after a like" — already handled in 5.8:
+//       the backend PUT now .populate('user', ...) the response, and
+//       updateBlog below replaces the list entry with that populated blog,
+//       so blog.user.name stays visible without reloading the page.
 // [aux] axios response interceptor: any 401 caused by an expired/invalid
 //       JWT auto-logs the user out and shows a clear notification, so the
 //       like/create flows don't fail silently with "failed to update blog".
