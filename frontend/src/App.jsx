@@ -16,6 +16,13 @@ import loginService from './services/login'
 //       NOTE: 5.5 only toggles the *new-blog* form. The login form is still
 //       shown/hidden by the `if (user === null)` conditional from [5.1] —
 //       it is intentionally NOT wrapped in Togglable.
+// [5.6] extract the new-blog form into its own component (BlogForm).
+//       The form's title/author/url state now lives in BlogForm; App only
+//       owns the `createBlog` callback that performs the POST, updates the
+//       list, shows the notification, and collapses the Togglable on success.
+// [5.7] per-blog view/hide toggle lives inside the Blog component itself
+//       (it manages its own local `visible` state). App.jsx is unchanged
+//       by 5.7 beyond this note.
 
 
 const App = () => {
