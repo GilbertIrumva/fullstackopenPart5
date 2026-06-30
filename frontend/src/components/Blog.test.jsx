@@ -7,10 +7,15 @@
 //   simulates real user interaction (focus, full event sequence) more
 //   faithfully than fireEvent.click.
 //
+// [5.15] Third test: click the "like" button twice and assert the
+//   `updateBlog` prop is called exactly twice. We swap the no-op prop
+//   for a vi.fn() spy so we can inspect call count.
+//
 // We don't need to mock blogService here — Blog never calls it. It only
 // invokes the `updateBlog` / `removeBlog` props (no-ops in this test).
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { vi } from 'vitest'
 import Blog from './Blog'
 
 describe('<Blog />', () => {
@@ -72,5 +77,29 @@ describe('<Blog />', () => {
 
     // and the toggle button flipped to "hide"
     expect(screen.getByRole('button', { name: 'hide' })).toBeInTheDocument()
+  })
+
+  test('calls the updateBlog prop once per like-button click', async () => {
+    const updateBlog = vi.fn()
+
+    render(
+      <Blog
+        blog={blog}
+        updateBlog={updateBlog}
+        removeBlog={() => {}}
+        currentUsername="tester"
+      />,
+    )
+
+    const user = userEvent.setup()
+
+    // the like button only exists after the details are expanded
+    await user.click(screen.getByRole('button', { name: 'view' }))
+
+    const likeButton = screen.getByRole('button', { name: 'like' })
+    await user.click(likeButton)
+    await user.click(likeButton)
+
+    expect(updateBlog).toHaveBeenCalledTimes(2)
   })
 })
