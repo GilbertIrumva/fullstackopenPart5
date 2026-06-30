@@ -33,6 +33,9 @@ import loginService from './services/login'
 // [5.10] render blogs sorted by `likes` (descending). We sort a COPY at
 //       render time so we never mutate the `blogs` state in place (Array
 //       .sort is destructive).
+// [5.11] delete button: App owns a `removeBlog(blog)` callback. The Blog
+//       component only renders the button if `currentUser.username` ===
+//       `blog.user.username`; backend still enforces it via 403.
 // [aux] axios response interceptor: any 401 caused by an expired/invalid
 //       JWT auto-logs the user out and shows a clear notification, so the
 //       like/create flows don't fail silently with "failed to update blog".
@@ -82,10 +85,11 @@ const App = () => {
       (error) => {
         const status = error?.response?.status
         const serverMsg = error?.response?.data?.error
-        if (
-          status === 401 &&
-          (serverMsg === 'token expired' || serverMsg === 'token invalid')
-        ) {
+        // covers: 'token expired', 'token invalid',
+        // and 'token missing or invalid' (user deleted but token still valid)
+        const looksLikeAuth =
+          typeof serverMsg === 'string' && serverMsg.toLowerCase().includes('token')
+        if (status === 401 && looksLikeAuth) {
           window.localStorage.removeItem('loggedBloglistUser')
           blogService.setToken(null)
           setUser(null)
@@ -135,8 +139,9 @@ const App = () => {
       blogFormRef.current?.toggleVisibility()
       notify(`a new blog '${created.title}' by ${created.author} added`)
       return true
-    } catch {
-      notify('failed to create blog', 'error')
+    } catch (error) {
+      const serverMsg = error?.response?.data?.error
+      notify(serverMsg || 'failed to create blog', 'error')
       return false
     }
   }
@@ -147,8 +152,23 @@ const App = () => {
     try {
       const returned = await blogService.update(id, updatedBlog)
       setBlogs(blogs.map((b) => (b.id === id ? returned : b)))
-    } catch {
-      notify('failed to update blog', 'error')
+    } catch (error) {
+      const serverMsg = error?.response?.data?.error
+      notify(serverMsg || 'failed to update blog', 'error')
+    }
+  }
+
+  // [5.11] DELETE the blog and drop it from the local list. The Blog
+  //       component handles its own window.confirm() prompt before calling
+  //       this, so we only get here once the user has agreed.
+  const removeBlog = async (blog) => {
+    try {
+      await blogService.remove(blog.id)
+      setBlogs(blogs.filter((b) => b.id !== blog.id))
+      notify(`removed '${blog.title}' by ${blog.author}`)
+    } catch (error) {
+      const serverMsg = error?.response?.data?.error
+      notify(serverMsg || 'failed to delete blog', 'error')
     }
   }
 
@@ -204,10 +224,18 @@ const App = () => {
       </Togglable>
 
       {/* [5.10] sort a copy by likes desc; never mutate state in place */}
+      {/* [5.11] pass currentUsername so Blog can show its delete button
+          only to the blog's creator */}
       {[...blogs]
         .sort((a, b) => b.likes - a.likes)
         .map((blog) => (
-          <Blog key={blog.id} blog={blog} updateBlog={updateBlog} />
+          <Blog
+            key={blog.id}
+            blog={blog}
+            updateBlog={updateBlog}
+            removeBlog={removeBlog}
+            currentUsername={user.username}
+          />
         ))}
     </div>
   )

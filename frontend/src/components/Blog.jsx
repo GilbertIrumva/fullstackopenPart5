@@ -6,6 +6,10 @@
 // [5.8] like button now PUTs the blog back with likes + 1 via the
 //       `updateBlog` prop provided by App. We send the user as an id
 //       (not the populated object) so Mongoose stores the reference.
+// [5.11] delete button: rendered only when the logged-in user's username
+//       matches blog.user.username. Uses window.confirm() before calling
+//       the parent's `removeBlog`. The backend still 403s non-creators,
+//       so this is UX only — not a real authorization boundary.
 //
 // NOTE: we intentionally do NOT reuse Togglable here. Togglable hides ALL
 // its children behind the button; this component must keep title+author
@@ -20,7 +24,18 @@ const blogStyle = {
   marginBottom: 5,
 }
 
-const Blog = ({ blog, updateBlog }) => {
+// [5.11] make the destructive action visually distinct
+const removeButtonStyle = {
+  backgroundColor: '#ff6b6b',
+  color: 'white',
+  border: 'none',
+  padding: '4px 10px',
+  borderRadius: 3,
+  cursor: 'pointer',
+  marginTop: 4,
+}
+
+const Blog = ({ blog, updateBlog, removeBlog, currentUsername }) => {
   const [visible, setVisible] = useState(false)
 
   const toggleVisible = () => setVisible(!visible)
@@ -40,6 +55,19 @@ const Blog = ({ blog, updateBlog }) => {
     })
   }
 
+  const handleRemove = () => {
+    if (window.confirm(`Remove blog '${blog.title}' by ${blog.author}?`)) {
+      removeBlog(blog)
+    }
+  }
+
+  // [5.11] only the creator sees the delete button. Older blogs without a
+  // populated user are treated as not-owned-by-anyone.
+  const canDelete =
+    blog.user &&
+    typeof blog.user === 'object' &&
+    blog.user.username === currentUsername
+
   return (
     <div style={blogStyle}>
       <div>
@@ -58,6 +86,11 @@ const Blog = ({ blog, updateBlog }) => {
             </button>
           </div>
           {blog.user && <div>{blog.user.name}</div>}
+          {canDelete && (
+            <button type="button" onClick={handleRemove} style={removeButtonStyle}>
+              remove
+            </button>
+          )}
         </div>
       )}
     </div>
