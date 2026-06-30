@@ -49,13 +49,17 @@ blogsRouter.delete('/:id', async (request, response) => {
 })
 
 blogsRouter.put('/:id', async (request, response) => {
-  const { title, author, url, likes } = request.body
+  // [5.8] accept `user` too so the reference is preserved when the
+  // frontend resends the whole blog (e.g. when liking). Populate the
+  // user on the response so the client can keep showing the author info
+  // without an extra GET.
+  const { title, author, url, likes, user } = request.body
 
   const updated = await Blog.findByIdAndUpdate(
     request.params.id,
-    { title, author, url, likes },
+    { title, author, url, likes, user },
     { new: true, runValidators: true, context: 'query' }
-  )
+  ).populate('user', { username: 1, name: 1 })
 
   if (!updated) {
     return response.status(404).end()

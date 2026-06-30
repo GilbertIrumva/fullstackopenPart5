@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef } from 'react'
+import axios from 'axios'
 import Blog from './components/Blog'
 import Notification from './components/Notification'
 import Togglable from './components/Togglable'
@@ -23,6 +24,11 @@ import loginService from './services/login'
 // [5.7] per-blog view/hide toggle lives inside the Blog component itself
 //       (it manages its own local `visible` state). App.jsx is unchanged
 //       by 5.7 beyond this note.
+// [5.8] like button: App owns an `updateBlog(id, blog)` callback that PUTs
+//       the whole blog back and swaps the updated entry into the list.
+// [aux] axios response interceptor: any 401 caused by an expired/invalid
+//       JWT auto-logs the user out and shows a clear notification, so the
+//       like/create flows don't fail silently with "failed to update blog".
 
 
 const App = () => {
@@ -59,6 +65,31 @@ const App = () => {
       blogService.getAll().then((blogs) => setBlogs(blogs))
     }
   }, [user])
+
+  // [aux] auto-logout on 401 from an expired/invalid token. Installed
+  // once on mount; ejected on unmount so dev hot-reloads don't stack
+  // multiple interceptors.
+  useEffect(() => {
+    const id = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        const status = error?.response?.status
+        const serverMsg = error?.response?.data?.error
+        if (
+          status === 401 &&
+          (serverMsg === 'token expired' || serverMsg === 'token invalid')
+        ) {
+          window.localStorage.removeItem('loggedBloglistUser')
+          blogService.setToken(null)
+          setUser(null)
+          setBlogs([])
+          notify('session expired, please log in again', 'error')
+        }
+        return Promise.reject(error)
+      }
+    )
+    return () => axios.interceptors.response.eject(id)
+  }, [])
 
   // [5.1] login → token in state
   // [5.2] also save user to localStorage
@@ -100,6 +131,17 @@ const App = () => {
     } catch {
       notify('failed to create blog', 'error')
       return false
+    }
+  }
+
+  // [5.8] PUT the blog back and swap it in the local list. The Blog
+  //       component calls this from its like button.
+  const updateBlog = async (id, updatedBlog) => {
+    try {
+      const returned = await blogService.update(id, updatedBlog)
+      setBlogs(blogs.map((b) => (b.id === id ? returned : b)))
+    } catch {
+      notify('failed to update blog', 'error')
     }
   }
 
@@ -155,7 +197,7 @@ const App = () => {
       </Togglable>
 
       {blogs.map((blog) => (
-        <Blog key={blog.id} blog={blog} />
+        <Blog key={blog.id} blog={blog} updateBlog={updateBlog} />
       ))}
     </div>
   )
