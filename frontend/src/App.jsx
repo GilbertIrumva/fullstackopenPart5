@@ -1,7 +1,8 @@
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Blog from './components/Blog'
 import Notification from './components/Notification'
+import Togglable from './components/Togglable'
 import blogService from './services/blogs'
 import loginService from './services/login'
 
@@ -10,6 +11,10 @@ import loginService from './services/login'
 // [5.2] persist login in localStorage + logout
 // [5.3] add new blog (form + POST with token)
 // [5.4] success/error notifications
+// [5.5] hide the new-blog form behind a Togglable button
+//       NOTE: 5.5 only toggles the *new-blog* form. The login form is still
+//       shown/hidden by the `if (user === null)` conditional from [5.1] —
+//       it is intentionally NOT wrapped in Togglable.
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
@@ -29,6 +34,10 @@ const App = () => {
   const [newTitle, setNewTitle] = useState('')
   const [newAuthor, setNewAuthor] = useState('')
   const [newUrl, setNewUrl] = useState('')
+
+  // [5.5] ref to the Togglable wrapping the new-blog form,
+  // so we can hide it after a successful create
+  const blogFormRef = useRef()
 
   // [5.4] show a banner for a few seconds
   const notify = (message, type = 'success') => {
@@ -72,6 +81,7 @@ const App = () => {
   }
 
   // [5.3] create a new blog, append it to the list, clear the form
+  // [5.5] also collapse the Togglable form after success
   const addBlog = async (event) => {
     event.preventDefault()
     try {
@@ -84,6 +94,7 @@ const App = () => {
       setNewTitle('')
       setNewAuthor('')
       setNewUrl('')
+      blogFormRef.current?.toggleVisibility()
       notify(`a new blog '${created.title}' by ${created.author} added`)
     } catch {
       notify('failed to create blog', 'error')
@@ -135,37 +146,40 @@ const App = () => {
         </button>
       </p>
 
-      <h3>create new</h3>
-      <form onSubmit={addBlog}>
-        <div>
-          title
-          <input
-            type="text"
-            value={newTitle}
-            name="Title"
-            onChange={({ target }) => setNewTitle(target.value)}
-          />
-        </div>
-        <div>
-          author
-          <input
-            type="text"
-            value={newAuthor}
-            name="Author"
-            onChange={({ target }) => setNewAuthor(target.value)}
-          />
-        </div>
-        <div>
-          url
-          <input
-            type="text"
-            value={newUrl}
-            name="Url"
-            onChange={({ target }) => setNewUrl(target.value)}
-          />
-        </div>
-        <button type="submit">create</button>
-      </form>
+      {/* [5.5] form is hidden by default; the Togglable button reveals it */}
+      <Togglable buttonLabel="create new blog" ref={blogFormRef}>
+        <h3>create new</h3>
+        <form onSubmit={addBlog}>
+          <div>
+            title
+            <input
+              type="text"
+              value={newTitle}
+              name="Title"
+              onChange={({ target }) => setNewTitle(target.value)}
+            />
+          </div>
+          <div>
+            author
+            <input
+              type="text"
+              value={newAuthor}
+              name="Author"
+              onChange={({ target }) => setNewAuthor(target.value)}
+            />
+          </div>
+          <div>
+            url
+            <input
+              type="text"
+              value={newUrl}
+              name="Url"
+              onChange={({ target }) => setNewUrl(target.value)}
+            />
+          </div>
+          <button type="submit">create</button>
+        </form>
+      </Togglable>
 
       {blogs.map((blog) => (
         <Blog key={blog.id} blog={blog} />
