@@ -1,8 +1,15 @@
 
 import { useState, useEffect } from 'react'
 import Blog from './components/Blog'
+import Notification from './components/Notification'
 import blogService from './services/blogs'
 import loginService from './services/login'
+
+// Part 5 — Bloglist frontend
+// [5.1] login form + conditional render
+// [5.2] persist login in localStorage + logout
+// [5.3] add new blog (form + POST with token)
+// [5.4] success/error notifications
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
@@ -15,12 +22,19 @@ const App = () => {
     return loggedUserJSON ? JSON.parse(loggedUserJSON) : null
   })
 
-  const [errorMessage, setErrorMessage] = useState(null)
+  // [5.4] notification: { message, type: 'success' | 'error' } | null
+  const [notification, setNotification] = useState(null)
 
   // [5.3] new-blog form fields
   const [newTitle, setNewTitle] = useState('')
   const [newAuthor, setNewAuthor] = useState('')
   const [newUrl, setNewUrl] = useState('')
+
+  // [5.4] show a banner for a few seconds
+  const notify = (message, type = 'success') => {
+    setNotification({ message, type })
+    setTimeout(() => setNotification(null), 5000)
+  }
 
   // [5.1] fetch blogs when a user is present
   // [5.3] also tell blogService which token to use for protected requests
@@ -45,8 +59,7 @@ const App = () => {
       setUsername('')
       setPassword('')
     } catch {
-      setErrorMessage('wrong username or password')
-      setTimeout(() => setErrorMessage(null), 5000)
+      notify('wrong username or password', 'error')
     }
   }
 
@@ -71,25 +84,18 @@ const App = () => {
       setNewTitle('')
       setNewAuthor('')
       setNewUrl('')
+      notify(`a new blog '${created.title}' by ${created.author} added`)
     } catch {
-      setErrorMessage('failed to create blog')
-      setTimeout(() => setErrorMessage(null), 5000)
+      notify('failed to create blog', 'error')
     }
   }
-
-  const errorNotification = () =>
-    errorMessage && (
-      <div style={{ color: 'red', border: '1px solid red', padding: 8 }}>
-        {errorMessage}
-      </div>
-    )
 
   // [5.1] not logged in → show only login form
   if (user === null) {
     return (
       <div>
         <h2>Log in to application</h2>
-        {errorNotification()}
+        <Notification notification={notification} />
         <form onSubmit={handleLogin}>
           <div>
             username
@@ -121,7 +127,7 @@ const App = () => {
   return (
     <div>
       <h2>blogs</h2>
-      {errorNotification()}
+      <Notification notification={notification} />
       <p>
         {user.name} logged in{' '}
         <button type="button" onClick={handleLogout}>
