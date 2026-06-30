@@ -10,6 +10,9 @@
 //       matches blog.user.username. Uses window.confirm() before calling
 //       the parent's `removeBlog`. The backend still 403s non-creators,
 //       so this is UX only — not a real authorization boundary.
+// [5.13] added className="blog" / "blog-header" / "blog-details" hooks so
+//       tests can locate the row and assert visibility of the toggled
+//       details block without relying on text matching alone.
 //
 // NOTE: we intentionally do NOT reuse Togglable here. Togglable hides ALL
 // its children behind the button; this component must keep title+author
@@ -69,15 +72,15 @@ const Blog = ({ blog, updateBlog, removeBlog, currentUsername }) => {
     blog.user.username === currentUsername
 
   return (
-    <div style={blogStyle}>
-      <div>
+    <div style={blogStyle} className="blog">
+      <div className="blog-header">
         {blog.title} {blog.author}{' '}
         <button type="button" onClick={toggleVisible}>
           {visible ? 'hide' : 'view'}
         </button>
       </div>
       {visible && (
-        <div>
+        <div className="blog-details">
           <div>{blog.url}</div>
           <div>
             likes {blog.likes}{' '}

@@ -32,4 +32,24 @@ export default defineConfig([
       'prefer-const': 'warn',
     },
   },
+  // [5.13] test files use Vitest globals (describe/test/expect/...) thanks
+  // to `test: { globals: true }` in vite.config.js. Declare them so ESLint
+  // doesn't flag them as undefined.
+  {
+    files: ['**/*.test.{js,jsx}', 'src/setupTests.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        describe: 'readonly',
+        test: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        vi: 'readonly',
+      },
+    },
+  },
 ])
