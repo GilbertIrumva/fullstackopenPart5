@@ -2,9 +2,15 @@
 //   1. title and author are shown by default
 //   2. url and likes are NOT shown until the user clicks "view"
 //
+// [5.14] Second test: click the "view" button and assert that url and
+//   likes become visible. Uses @testing-library/user-event because it
+//   simulates real user interaction (focus, full event sequence) more
+//   faithfully than fireEvent.click.
+//
 // We don't need to mock blogService here — Blog never calls it. It only
 // invokes the `updateBlog` / `removeBlog` props (no-ops in this test).
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import Blog from './Blog'
 
 describe('<Blog />', () => {
@@ -40,5 +46,31 @@ describe('<Blog />', () => {
     // and the url / likes text should not be findable anywhere
     expect(screen.queryByText('https://example.com/rtl')).toBeNull()
     expect(screen.queryByText(/likes 7/)).toBeNull()
+  })
+
+  test('shows url and likes after the view button is clicked', async () => {
+    const { container } = render(
+      <Blog
+        blog={blog}
+        updateBlog={() => {}}
+        removeBlog={() => {}}
+        currentUsername="tester"
+      />,
+    )
+
+    const user = userEvent.setup()
+    const viewButton = screen.getByRole('button', { name: 'view' })
+    await user.click(viewButton)
+
+    // details block is now mounted
+    const details = container.querySelector('.blog-details')
+    expect(details).not.toBeNull()
+
+    // url and likes are visible inside it
+    expect(details).toHaveTextContent('https://example.com/rtl')
+    expect(details).toHaveTextContent('likes 7')
+
+    // and the toggle button flipped to "hide"
+    expect(screen.getByRole('button', { name: 'hide' })).toBeInTheDocument()
   })
 })
