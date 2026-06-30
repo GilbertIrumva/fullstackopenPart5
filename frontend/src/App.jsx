@@ -30,6 +30,9 @@ import loginService from './services/login'
 //       the backend PUT now .populate('user', ...) the response, and
 //       updateBlog below replaces the list entry with that populated blog,
 //       so blog.user.name stays visible without reloading the page.
+// [5.10] render blogs sorted by `likes` (descending). We sort a COPY at
+//       render time so we never mutate the `blogs` state in place (Array
+//       .sort is destructive).
 // [aux] axios response interceptor: any 401 caused by an expired/invalid
 //       JWT auto-logs the user out and shows a clear notification, so the
 //       like/create flows don't fail silently with "failed to update blog".
@@ -200,9 +203,12 @@ const App = () => {
         <BlogForm createBlog={createBlog} />
       </Togglable>
 
-      {blogs.map((blog) => (
-        <Blog key={blog.id} blog={blog} updateBlog={updateBlog} />
-      ))}
+      {/* [5.10] sort a copy by likes desc; never mutate state in place */}
+      {[...blogs]
+        .sort((a, b) => b.likes - a.likes)
+        .map((blog) => (
+          <Blog key={blog.id} blog={blog} updateBlog={updateBlog} />
+        ))}
     </div>
   )
 }
