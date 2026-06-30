@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Blog from './components/Blog'
 import Notification from './components/Notification'
 import Togglable from './components/Togglable'
+import BlogForm from './components/BlogForm'
 import blogService from './services/blogs'
 import loginService from './services/login'
 
@@ -15,6 +16,7 @@ import loginService from './services/login'
 //       NOTE: 5.5 only toggles the *new-blog* form. The login form is still
 //       shown/hidden by the `if (user === null)` conditional from [5.1] —
 //       it is intentionally NOT wrapped in Togglable.
+
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
@@ -30,10 +32,7 @@ const App = () => {
   // [5.4] notification: { message, type: 'success' | 'error' } | null
   const [notification, setNotification] = useState(null)
 
-  // [5.3] new-blog form fields
-  const [newTitle, setNewTitle] = useState('')
-  const [newAuthor, setNewAuthor] = useState('')
-  const [newUrl, setNewUrl] = useState('')
+  // [5.6] form fields moved into BlogForm; App no longer owns them.
 
   // [5.5] ref to the Togglable wrapping the new-blog form,
   // so we can hide it after a successful create
@@ -80,24 +79,20 @@ const App = () => {
     setBlogs([])
   }
 
-  // [5.3] create a new blog, append it to the list, clear the form
+  // [5.3] create a new blog, append it to the list
   // [5.5] also collapse the Togglable form after success
-  const addBlog = async (event) => {
-    event.preventDefault()
+  // [5.6] called by BlogForm with { title, author, url }; returns a boolean
+  //       so the child knows whether to clear its own inputs.
+  const createBlog = async (blogToCreate) => {
     try {
-      const created = await blogService.create({
-        title: newTitle,
-        author: newAuthor,
-        url: newUrl,
-      })
+      const created = await blogService.create(blogToCreate)
       setBlogs(blogs.concat(created))
-      setNewTitle('')
-      setNewAuthor('')
-      setNewUrl('')
       blogFormRef.current?.toggleVisibility()
       notify(`a new blog '${created.title}' by ${created.author} added`)
+      return true
     } catch {
       notify('failed to create blog', 'error')
+      return false
     }
   }
 
@@ -147,38 +142,9 @@ const App = () => {
       </p>
 
       {/* [5.5] form is hidden by default; the Togglable button reveals it */}
+      {/* [5.6] the form itself is now its own component (BlogForm) */}
       <Togglable buttonLabel="create new blog" ref={blogFormRef}>
-        <h3>create new</h3>
-        <form onSubmit={addBlog}>
-          <div>
-            title
-            <input
-              type="text"
-              value={newTitle}
-              name="Title"
-              onChange={({ target }) => setNewTitle(target.value)}
-            />
-          </div>
-          <div>
-            author
-            <input
-              type="text"
-              value={newAuthor}
-              name="Author"
-              onChange={({ target }) => setNewAuthor(target.value)}
-            />
-          </div>
-          <div>
-            url
-            <input
-              type="text"
-              value={newUrl}
-              name="Url"
-              onChange={({ target }) => setNewUrl(target.value)}
-            />
-          </div>
-          <button type="submit">create</button>
-        </form>
+        <BlogForm createBlog={createBlog} />
       </Togglable>
 
       {blogs.map((blog) => (
