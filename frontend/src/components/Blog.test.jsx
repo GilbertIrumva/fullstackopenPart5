@@ -1,15 +1,3 @@
-// [5.13] First test for the Blog component. Renders a blog and asserts:
-//   1. title and author are shown by default
-//   2. url and likes are NOT shown until the user clicks "view"
-//
-// [5.14] Second test: click the "view" button and assert that url and
-//   likes become visible. Uses @testing-library/user-event because it
-//   simulates real user interaction (focus, full event sequence) more
-//   faithfully than fireEvent.click.
-//
-// [5.15] Third test: click the "like" button twice and assert the
-//   `updateBlog` prop is called exactly twice. We swap the no-op prop
-//   for a vi.fn() spy so we can inspect call count.
 //
 // We don't need to mock blogService here — Blog never calls it. It only
 // invokes the `updateBlog` / `removeBlog` props (no-ops in this test).
