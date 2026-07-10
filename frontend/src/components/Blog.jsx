@@ -49,9 +49,10 @@ const Blog = ({ blog, updateBlog, removeBlog, currentUsername }) => {
   // [5.11] only the creator sees the delete button. Older blogs without a
   // populated user are treated as not-owned-by-anyone.
   const canDelete =
-    blog.user &&
-    typeof blog.user === 'object' &&
-    blog.user.username === currentUsername
+  blog.user &&
+  typeof blog.user === 'object' &&
+  blog.user.username === currentUsername
+
 
   return (
     <div style={blogStyle} className="blog">

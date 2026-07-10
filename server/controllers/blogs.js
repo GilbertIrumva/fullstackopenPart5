@@ -26,7 +26,9 @@ blogsRouter.post('/', async (request, response) => {
   user.blogs = user.blogs.concat(savedBlog._id)
   await user.save()
 
-  response.status(201).json(savedBlog)
+  const populatedBlog = await savedBlog.populate('user', { username: 1, name: 1 })
+
+  response.status(201).json(populatedBlog)
 })
 
 blogsRouter.delete('/:id', async (request, response) => {
@@ -49,14 +51,8 @@ blogsRouter.delete('/:id', async (request, response) => {
 })
 
 blogsRouter.put('/:id', async (request, response) => {
-  // [5.8] accept `user` too so the reference is preserved when the
-  // frontend resends the whole blog (e.g. when liking). Populate the
-  // user on the response so the client can keep showing the author info
-  // without an extra GET.
-  // [5.9] the .populate(...) below is exactly what fixes the "author name
-  // disappears after a like" bug: without it the response carries only the
-  // user ObjectId, and Blog.jsx's `{blog.user && <div>{blog.user.name}</div>}`
-  // silently renders nothing until the next full GET /api/blogs.
+  
+
   const { title, author, url, likes, user } = request.body
 
   const updated = await Blog.findByIdAndUpdate(
