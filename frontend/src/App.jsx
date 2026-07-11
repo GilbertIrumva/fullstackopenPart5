@@ -8,7 +8,7 @@ import BlogForm from './components/BlogForm'
 import blogService from './services/blogs'
 import loginService from './services/login'
 
-
+const sortBlogsByLikes = (blogs) => [...blogs].sort((a, b) => b.likes - a.likes)
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
@@ -41,7 +41,7 @@ const App = () => {
   useEffect(() => {
     if (user) {
       blogService.setToken(user.token)
-      blogService.getAll().then((blogs) => setBlogs(blogs))
+      blogService.getAll().then((blogs) => setBlogs(sortBlogsByLikes(blogs)))
     }
   }, [user])
 
@@ -104,7 +104,7 @@ const App = () => {
   const createBlog = async (blogToCreate) => {
     try {
       const created = await blogService.create(blogToCreate)
-      setBlogs(blogs.concat(created))
+      setBlogs((prevBlogs) => sortBlogsByLikes(prevBlogs.concat(created)))
       blogFormRef.current?.toggleVisibility()
       notify(`a new blog '${created.title}' by ${created.author} added`)
       return true
@@ -120,7 +120,7 @@ const App = () => {
   const updateBlog = async (id, updatedBlog) => {
     try {
       const returned = await blogService.update(id, updatedBlog)
-      setBlogs(blogs.map((b) => (b.id === id ? returned : b)))
+      setBlogs((prevBlogs) => sortBlogsByLikes(prevBlogs.map((b) => (b.id === id ? returned : b))))
     } catch (error) {
       const serverMsg = error?.response?.data?.error
       notify(serverMsg || 'failed to update blog', 'error')
@@ -133,7 +133,7 @@ const App = () => {
   const removeBlog = async (blog) => {
     try {
       await blogService.remove(blog.id)
-      setBlogs(blogs.filter((b) => b.id !== blog.id))
+      setBlogs((prevBlogs) => sortBlogsByLikes(prevBlogs.filter((b) => b.id !== blog.id)))
       notify(`removed '${blog.title}' by ${blog.author}`)
     } catch (error) {
       const serverMsg = error?.response?.data?.error
@@ -195,9 +195,7 @@ const App = () => {
       {/* [5.10] sort a copy by likes desc; never mutate state in place */}
       {/* [5.11] pass currentUsername so Blog can show its delete button
           only to the blog's creator */}
-      {[...blogs]
-        .sort((a, b) => b.likes - a.likes)
-        .map((blog) => (
+      {sortBlogsByLikes(blogs).map((blog) => (
           <Blog
             key={blog.id}
             blog={blog}

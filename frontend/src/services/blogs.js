@@ -24,8 +24,6 @@ const create = async (newBlog) => {
   return response.data
 }
 
-// [5.8] PUT the whole blog object back. The like flow does not require
-// the Authorization header on the backend's current PUT handler, but we
 // send it anyway so liking still works if/when that route is protected.
 const update = async (id, updatedBlog) => {
   const config = { headers: { Authorization: token } }

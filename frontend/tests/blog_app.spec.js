@@ -25,6 +25,17 @@ const login = async (page, username) => {
   await page.getByRole('button', { name: 'login' }).click()
 }
 
+const createBlog = async (page, title, author) => {
+  await page.getByRole('button', { name: 'create new blog' }).click()
+  await page.getByPlaceholder('blog title').fill(title)
+  await page.getByPlaceholder('blog author').fill(author)
+  await page.getByPlaceholder('blog url').fill(`https://example.com/${title.toLowerCase().replace(/\s+/g, '-')}`)
+
+  await page.getByRole('button', { name: 'create' }).click()
+
+  await expect(page.locator('.blog').filter({ hasText: title }).first()).toBeVisible({ timeout: 10000 })
+}
+
 test('a blog can be liked', async ({ page, request }) => {
   const user = await createUser(request)
 
@@ -52,6 +63,44 @@ test('a blog can be liked', async ({ page, request }) => {
   await expect(
     page.locator('.blog', { hasText: 'Likeable post' }).getByText(/likes\s+1/)
   ).toBeVisible({ timeout: 10000 })
+})
+
+test('blogs are ordered by the number of likes', async ({ page, request }) => {
+  const user = await createUser(request)
+
+  await page.goto('/')
+  await login(page, user.username)
+
+  await createBlog(page, 'Least liked blog', 'Ordering Tester')
+  await createBlog(page, 'Most liked blog', 'Ordering Tester')
+  await createBlog(page, 'Middle liked blog', 'Ordering Tester')
+
+  const likeBlog = async (title) => {
+    const blogRow = page.locator('.blog').filter({ hasText: title }).first()
+    await expect(blogRow).toBeVisible()
+
+    const toggleButton = blogRow.getByRole('button', { name: /view|hide/i })
+    await expect(toggleButton).toBeVisible()
+
+    const likeButton = blogRow.getByRole('button', { name: 'like' })
+    const isLikeVisible = await likeButton.isVisible().catch(() => false)
+
+    if (!isLikeVisible) {
+      await toggleButton.click({ force: true })
+    }
+
+    await expect(likeButton).toBeVisible()
+    await likeButton.click({ force: true })
+  }
+
+  await likeBlog('Most liked blog')
+  await likeBlog('Most liked blog')
+  await likeBlog('Middle liked blog')
+
+  await expect(page.locator('.blog').first()).toBeVisible({ timeout: 10000 })
+  await expect(page.locator('.blog').first()).toContainText('Most liked blog', { timeout: 10000 })
+  await expect(page.locator('.blog').nth(1)).toContainText('Middle liked blog', { timeout: 10000 })
+  await expect(page.locator('.blog').nth(2)).toContainText('Least liked blog', { timeout: 10000 })
 })
 
 test('the user who created a blog can delete it', async ({ page, request }) => {
@@ -82,8 +131,8 @@ test('the user who created a blog can delete it', async ({ page, request }) => {
   await blogRow.getByRole('button', { name: 'remove' }).click()
 
   await expect(
-    page.locator('.blog').filter({ hasText: title })
-  ).toHaveCount(0)
+    page.locator('.blog').filter({ hasText: title }).first()
+  ).toHaveCount(0, { timeout: 10000 })
 })
 
 test('only the user who added a blog sees its delete button', async ({ page, request }) => {
