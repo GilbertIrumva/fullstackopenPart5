@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { Routes, Route, Link, useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios'
 import Blog from './components/Blog'
+import BlogForm from './components/BlogForm'
 import Notification from './components/Notification'
 import blogService from './services/blogs'
 import loginService from './services/login'
@@ -14,7 +15,6 @@ const App = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
 
-  // [5.2] restore user from localStorage on first render
   const [user, setUser] = useState(() => {
     const loggedUserJSON = window.localStorage.getItem('loggedBloglistUser')
     return loggedUserJSON ? JSON.parse(loggedUserJSON) : null
@@ -136,9 +136,24 @@ const App = () => {
       await blogService.remove(blog.id)
       setBlogs((prevBlogs) => sortBlogsByLikes(prevBlogs.filter((b) => b.id !== blog.id)))
       notify(`removed '${blog.title}' by ${blog.author}`)
+      navigate('/')
     } catch (error) {
       const serverMsg = error?.response?.data?.error
       notify(serverMsg || 'failed to delete blog', 'error')
+    }
+  }
+
+  const createBlog = async (newBlog) => {
+    try {
+      const createdBlog = await blogService.create(newBlog)
+      setBlogs((prevBlogs) => sortBlogsByLikes([...prevBlogs, createdBlog]))
+      notify(`a new blog '${createdBlog.title}' by ${createdBlog.author} added`)
+      navigate('/')
+      return true
+    } catch (error) {
+      const serverMsg = error?.response?.data?.error
+      notify(serverMsg || 'failed to create blog', 'error')
+      return false
     }
   }
 
@@ -220,12 +235,25 @@ const App = () => {
     )
   }
 
+  const CreateBlogView = () => (
+    <div>
+      <h2>Create new blog</h2>
+      <Notification notification={notification} />
+      {!user && <p>Please log in to create a new blog.</p>}
+      <BlogForm createBlog={createBlog} />
+    </div>
+  )
+
   return (
     <div>
       <nav>
         <Link to="/">blogs</Link>{' '}
         {user ? (
-          <button type="button" onClick={handleLogout}>logout</button>
+          <>
+            {' '}
+            <Link to="/create">create new</Link>{' '}
+            <button type="button" onClick={handleLogout}>logout</button>
+          </>
         ) : (
           <Link to="/login">login</Link>
         )}
@@ -233,6 +261,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={blogList()} />
         <Route path="/login" element={loginForm()} />
+        <Route path="/create" element={<CreateBlogView />} />
         <Route path="/blogs/:id" element={<BlogView />} />
       </Routes>
     </div>

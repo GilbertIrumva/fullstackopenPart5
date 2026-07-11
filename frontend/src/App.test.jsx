@@ -46,4 +46,18 @@ describe('App routing', () => {
     expect(screen.getByText(/router tester/i)).toBeInTheDocument()
   })
 
+  test('shows the create-blog form on the /create route for logged-in users', async () => {
+    window.localStorage.setItem(
+      'loggedBloglistUser',
+      JSON.stringify({ token: 'abc123', username: 'demo', name: 'Demo User' })
+    )
+
+    render(
+      <MemoryRouter initialEntries={['/create']}>
+        <App />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByPlaceholderText('blog title')).toBeInTheDocument()
+  })
 })
