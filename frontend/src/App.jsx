@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react'
-import { Routes, Route, Link, useNavigate } from 'react-router-dom'
+import { Routes, Route, Link, useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios'
 import Blog from './components/Blog'
 import Notification from './components/Notification'
@@ -93,6 +93,29 @@ const App = () => {
     navigate('/')
   }
 
+  const handleLike = async (blog) => {
+    if (!user) {
+      notify('you need to log in to like a blog', 'error')
+      return
+    }
+
+    const userId = blog.user && typeof blog.user === 'object' ? blog.user.id : blog.user
+
+    try {
+      const updatedBlog = await blogService.update(blog.id, {
+        title: blog.title,
+        author: blog.author,
+        url: blog.url,
+        likes: blog.likes + 1,
+        user: userId,
+      })
+      setBlogs((prevBlogs) => sortBlogsByLikes(prevBlogs.map((b) => (b.id === blog.id ? updatedBlog : b))))
+    } catch (error) {
+      const serverMsg = error?.response?.data?.error
+      notify(serverMsg || 'failed to update blog', 'error')
+    }
+  }
+
   // [5.8] PUT the blog back and swap it in the local list. The Blog
   //       component calls this from its like button.
   const updateBlog = async (id, updatedBlog) => {
@@ -165,16 +188,37 @@ const App = () => {
       {/* [5.11] pass currentUsername so Blog can show its delete button
           only to the blog's creator */}
       {sortBlogsByLikes(blogs).map((blog) => (
-        <Blog
-          key={blog.id}
-          blog={blog}
-          updateBlog={updateBlog}
-          removeBlog={removeBlog}
-          currentUsername={user?.username}
-        />
+        <div key={blog.id} className="blog">
+          <Link to={`/blogs/${blog.id}`}>{blog.title} by {blog.author}</Link>
+        </div>
       ))}
     </div>
   )
+
+  const BlogView = () => {
+    const { id } = useParams()
+    const blog = blogs.find((b) => b.id === id)
+
+    if (!blog) {
+      return <div>blog not found</div>
+    }
+
+    return (
+      <div>
+        <h2>{blog.title}</h2>
+        <Notification notification={notification} />
+        <div>{blog.url}</div>
+        <div>
+          likes {blog.likes}{' '}
+          <button type="button" onClick={() => handleLike(blog)}>
+            like
+          </button>
+        </div>
+        <div>{blog.author}</div>
+        {blog.user && <div>{blog.user.name}</div>}
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -189,6 +233,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={blogList()} />
         <Route path="/login" element={loginForm()} />
+        <Route path="/blogs/:id" element={<BlogView />} />
       </Routes>
     </div>
   )
