@@ -218,19 +218,35 @@ const App = () => {
       return <div>blog not found</div>
     }
 
+    const currentUsername = user?.username
+    const isCreator =
+      blog.user &&
+      typeof blog.user === 'object' &&
+      blog.user.username === currentUsername
+
     return (
       <div>
         <h2>{blog.title}</h2>
         <Notification notification={notification} />
         <div>{blog.url}</div>
         <div>
-          likes {blog.likes}{' '}
-          <button type="button" onClick={() => handleLike(blog)}>
-            like
-          </button>
+          likes {blog.likes}
+          {user && (
+            <>
+              {' '}
+              <button type="button" onClick={() => handleLike(blog)}>
+                like
+              </button>
+            </>
+          )}
         </div>
         <div>{blog.author}</div>
         {blog.user && <div>{blog.user.name}</div>}
+        {isCreator && (
+          <button type="button" onClick={() => removeBlog(blog)}>
+            remove
+          </button>
+        )}
       </div>
     )
   }
