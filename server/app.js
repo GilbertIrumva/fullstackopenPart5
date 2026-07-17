@@ -34,10 +34,11 @@ app.use('/api/login', loginRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/blogs', middleware.userExtractor, blogsRouter)
 
-// [5.18] mount the testing-only router behind a NODE_ENV check so the
-// destructive reset endpoint can never be hit against production data.
-if (process.env.NODE_ENV === 'test') {
-  const testingRouter = require('./controllers/testing')
+// [5.18] mount the testing-only router. This is available for Playwright tests
+// Note: In production (NODE_ENV=production), this endpoint is not available
+const testingRouter = require('./controllers/testing')
+const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
+if (isDevelopment) {
   app.use('/api/testing', testingRouter)
 }
 

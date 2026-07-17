@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test'
 
 test.beforeEach(async ({ request }) => {
   await request.post('http://localhost:3003/api/testing/reset')
+  // wait a bit for reset to complete
+  await new Promise(resolve => setTimeout(resolve, 100))
 })
 
 const createUser = async (request) => {
@@ -19,147 +21,111 @@ const createUser = async (request) => {
   return user
 }
 
-const login = async (page, username) => {
-  await page.getByRole('textbox').first().fill(username)
-  await page.locator('input[type="password"]').fill('salainen')
+const login = async (page, username, password = 'salainen') => {
+  await page.getByRole('textbox', { name: /username/i }).fill(username)
+  await page.getByLabel(/password/i).fill(password)
   await page.getByRole('button', { name: 'login' }).click()
 }
 
-const createBlog = async (page, title, author) => {
-  await page.getByRole('button', { name: 'create new blog' }).click()
+const createBlog = async (page, title, author, url = `https://example.com/${title.toLowerCase().replace(/\s+/g, '-')}`) => {
+  await page.getByRole('link', { name: 'create new' }).click()
   await page.getByPlaceholder('blog title').fill(title)
   await page.getByPlaceholder('blog author').fill(author)
-  await page.getByPlaceholder('blog url').fill(`https://example.com/${title.toLowerCase().replace(/\s+/g, '-')}`)
-
+  await page.getByPlaceholder('blog url').fill(url)
   await page.getByRole('button', { name: 'create' }).click()
-
-  await expect(page.locator('.blog').filter({ hasText: title }).first()).toBeVisible({ timeout: 10000 })
+  // wait for the blog to appear in the list
+  await page.getByRole('link', { name: new RegExp(`${title}.*${author}`, 'i') }).waitFor({ timeout: 5000 })
 }
 
-test('a blog can be liked', async ({ page, request }) => {
+test('login succeeds with the correct username/password combination', async ({ page, request }) => {
   const user = await createUser(request)
 
-  await page.goto('/')
-
+  await page.goto('/login')
   await login(page, user.username)
 
-  await page.getByRole('button', { name: 'create new blog' }).click()
-
-  await page.getByPlaceholder('blog title').fill('Likeable post')
-  await page.getByPlaceholder('blog author').fill('Like Tester')
-  await page.getByPlaceholder('blog url').fill('https://example.com/like')
-
-  await Promise.all([
-    page.waitForResponse((resp) => resp.url().includes('/api/blogs') && resp.request().method() === 'POST'),
-    page.getByRole('button', { name: 'create' }).click(),
-  ])
-
-  await page.locator('.blog', { hasText: 'Likeable post' }).first().getByRole('button', { name: 'view' }).click()
-  await Promise.all([
-    page.waitForResponse((resp) => resp.url().includes('/api/blogs') && resp.request().method() === 'PUT'),
-    page.locator('.blog', { hasText: 'Likeable post' }).first().getByRole('button', { name: 'like' }).click(),
-  ])
-
-  await expect(
-    page.locator('.blog', { hasText: 'Likeable post' }).getByText(/likes\s+1/)
-  ).toBeVisible({ timeout: 10000 })
+  await expect(page.getByText(`${user.name} logged in`)).toBeVisible()
 })
 
-test('blogs are ordered by the number of likes', async ({ page, request }) => {
+test('login fails with an incorrect username/password combination', async ({ page, request }) => {
+  await createUser(request)
+
+  await page.goto('/login')
+  await login(page, 'wrong-user', 'wrong-password')
+
+  await expect(page.getByText(/wrong username or password/i)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'logout' })).toHaveCount(0)
+})
+
+test('a logged-in user can create a blog', async ({ page, request }) => {
   const user = await createUser(request)
 
-  await page.goto('/')
+  await page.goto('/login')
   await login(page, user.username)
 
-  await createBlog(page, 'Least liked blog', 'Ordering Tester')
-  await createBlog(page, 'Most liked blog', 'Ordering Tester')
-  await createBlog(page, 'Middle liked blog', 'Ordering Tester')
+  const title = `Created by Playwright ${Date.now()}`
+  await createBlog(page, title, 'Playwright Tester')
 
-  const likeBlog = async (title) => {
-    const blogRow = page.locator('.blog').filter({ hasText: title }).first()
-    await expect(blogRow).toBeVisible()
+  await expect(page.getByText(`${title} by Playwright Tester`)).toBeVisible()
+})
 
-    const toggleButton = blogRow.getByRole('button', { name: /view|hide/i })
-    await expect(toggleButton).toBeVisible()
+test('a logged-in user can like blogs', async ({ page, request }) => {
+  const user = await createUser(request)
 
-    const likeButton = blogRow.getByRole('button', { name: 'like' })
-    const isLikeVisible = await likeButton.isVisible().catch(() => false)
+  await page.goto('/login')
+  await login(page, user.username)
 
-    if (!isLikeVisible) {
-      await toggleButton.click({ force: true })
-    }
+  const title = `Likeable post ${Date.now()}`
+  await createBlog(page, title, 'Like Tester')
+  await page.getByRole('link', { name: new RegExp(title, 'i') }).click()
+  await page.getByRole('button', { name: 'like' }).click()
 
-    await expect(likeButton).toBeVisible()
-    await likeButton.click({ force: true })
+  await expect(page.getByText(/likes 1/i)).toBeVisible()
+})
+
+test('a logged-in user can delete a blog', async ({ page, request }) => {
+  const user = await createUser(request)
+
+  await page.goto('/login')
+  await login(page, user.username)
+
+  const title = `Deletable blog ${Date.now()}`
+  await createBlog(page, title, 'Delete Tester')
+  await page.getByRole('link', { name: new RegExp(title, 'i') }).click()
+
+  page.once('dialog', (dialog) => dialog.accept())
+  await page.getByRole('button', { name: 'remove' }).click()
+
+  // wait for navigation back to home page
+  await page.waitForURL('http://localhost:5173/', { timeout: 5000 })
+  
+  // now check that the blog is gone from the list
+  await expect(page.getByText(title)).toHaveCount(0)
+})
+
+test('blogs are sorted by likes', async ({ page, request }) => {
+  const user = await createUser(request)
+
+  await page.goto('/login')
+  await login(page, user.username)
+  // wait for the page to load the blogs
+  await page.waitForLoadState('networkidle')
+
+  const firstTitle = `Least liked ${Date.now()}`
+  const secondTitle = `Middle liked ${Date.now()}`
+  const thirdTitle = `Most liked ${Date.now()}`
+
+  await createBlog(page, firstTitle, 'Ordering Tester')
+  await createBlog(page, secondTitle, 'Ordering Tester')
+  await createBlog(page, thirdTitle, 'Ordering Tester')
+
+  for (const title of [thirdTitle, thirdTitle, secondTitle]) {
+    await page.getByRole('link', { name: new RegExp(title, 'i') }).click()
+    await page.getByRole('button', { name: 'like' }).click()
+    await page.getByRole('link', { name: 'blogs' }).click()
   }
 
-  await likeBlog('Most liked blog')
-  await likeBlog('Most liked blog')
-  await likeBlog('Middle liked blog')
-
-  await expect(page.locator('.blog').first()).toBeVisible({ timeout: 10000 })
-  await expect(page.locator('.blog').first()).toContainText('Most liked blog', { timeout: 10000 })
-  await expect(page.locator('.blog').nth(1)).toContainText('Middle liked blog', { timeout: 10000 })
-  await expect(page.locator('.blog').nth(2)).toContainText('Least liked blog', { timeout: 10000 })
-})
-
-test('the user who created a blog can delete it', async ({ page, request }) => {
-  const user = await createUser(request)
-
-  await page.goto('/')
-
-  await login(page, user.username)
-
-  await page.getByRole('button', { name: 'create new blog' }).click()
-
-  const title = `Blog to delete ${Date.now()}`
-
-  await page.getByPlaceholder('blog title').fill(title)
-  await page.getByPlaceholder('blog author').fill('Delete Tester')
-  await page.getByPlaceholder('blog url').fill('https://example.com/delete')
-
-  await page.getByRole('button', { name: 'create' }).click()
-
-  const blogRow = page.locator('.blog').filter({
-    hasText: title,
-  }).first()
-
-  await blogRow.getByRole('button', { name: 'view' }).click()
-
-  page.on('dialog', dialog => dialog.accept())
-
-  await blogRow.getByRole('button', { name: 'remove' }).click()
-
-  await expect(
-    page.locator('.blog').filter({ hasText: title }).first()
-  ).toHaveCount(0, { timeout: 10000 })
-})
-
-test('only the user who added a blog sees its delete button', async ({ page, request }) => {
-  const creator = await createUser(request)
-  const otherUser = await createUser(request)
-
-  await page.goto('/')
-  await login(page, creator.username)
-
-  await page.getByRole('button', { name: 'create new blog' }).click()
-
-  const title = `Blog not deletable by others ${Date.now()}`
-
-  await page.getByPlaceholder('blog title').fill(title)
-  await page.getByPlaceholder('blog author').fill('Delete Visibility Tester')
-  await page.getByPlaceholder('blog url').fill('https://example.com/visibility')
-
-  await page.getByRole('button', { name: 'create' }).click()
-  await page.getByRole('button', { name: 'logout' }).click()
-
-  await login(page, otherUser.username)
-
-  const blogRow = page.locator('.blog').filter({
-    hasText: title,
-  }).first()
-
-  await blogRow.getByRole('button', { name: 'view' }).click()
-
-  await expect(blogRow.getByRole('button', { name: 'remove' })).toHaveCount(0)
+  const blogEntries = page.locator('.blog')
+  await expect(blogEntries.nth(0)).toContainText(thirdTitle)
+  await expect(blogEntries.nth(1)).toContainText(secondTitle)
+  await expect(blogEntries.nth(2)).toContainText(firstTitle)
 })

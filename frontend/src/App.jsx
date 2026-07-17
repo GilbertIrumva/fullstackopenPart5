@@ -90,6 +90,8 @@ const App = () => {
     blogService.setToken(null)
     setUser(null)
     setBlogs([])
+    setUsername('')
+    setPassword('')
     navigate('/')
   }
 
@@ -157,34 +159,41 @@ const App = () => {
     }
   }
 
-  const loginForm = () => (
-    <div>
-      <h2>Log in to application</h2>
-      <Notification notification={notification} />
-      {user && <p>{user.name} logged in</p>}
-      <form onSubmit={handleLogin}>
-        <div>
-          username
-          <input
-            type="text"
-            value={username}
-            name="Username"
-            onChange={({ target }) => setUsername(target.value)}
-          />
-        </div>
-        <div>
-          password
-          <input
-            type="password"
-            value={password}
-            name="Password"
-            onChange={({ target }) => setPassword(target.value)}
-          />
-        </div>
-        <button type="submit">login</button>
-      </form>
-    </div>
-  )
+  const loginForm = () => {
+    if (user) {
+      return <p>{user.name} logged in</p>
+    }
+    
+    return (
+      <div>
+        <h2>Log in to application</h2>
+        <Notification notification={notification} />
+        <form onSubmit={handleLogin}>
+          <div>
+            <label htmlFor="username">username</label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              name="Username"
+              onChange={({ target }) => setUsername(target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="password">password</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              name="Password"
+              onChange={({ target }) => setPassword(target.value)}
+            />
+          </div>
+          <button type="submit">login</button>
+        </form>
+      </div>
+    )
+  }
 
   const blogList = () => (
     <div>
