@@ -229,29 +229,37 @@ const App = () => {
       blog.user.username === currentUsername
 
     return (
-      <div>
-        <h2>{blog.title}</h2>
-        <Notification notification={notification} />
-        <div>{blog.url}</div>
-        <div>
-          likes {blog.likes}
-          {user && (
-            <>
-              {' '}
-              <button type="button" onClick={() => handleLike(blog)}>
-                like
-              </button>
-            </>
+      <article className="single-blog">
+        <div className="single-blog-header">
+          <div>
+            <h2 className="single-blog-title">{blog.title}</h2>
+            <p className="single-blog-author">by {blog.author}</p>
+          </div>
+          {blog.user && (
+            <p className="single-blog-owner">added by {blog.user.name}</p>
           )}
         </div>
-        <div>{blog.author}</div>
-        {blog.user && <div>{blog.user.name}</div>}
-        {isCreator && (
-          <button type="button" onClick={() => removeBlog(blog)}>
-            remove
-          </button>
-        )}
-      </div>
+        <Notification notification={notification} />
+        <div className="single-blog-url">
+          <span className="single-blog-url-label">URL:</span>
+          <a href={blog.url} target="_blank" rel="noreferrer" className="single-blog-url-link">
+            visit site
+          </a>
+        </div>
+        <div className="single-blog-actions">
+          <span className="blog-like-count">{blog.likes} likes</span>
+          {user && (
+            <button type="button" onClick={() => handleLike(blog)} className="blog-button blog-button--like">
+              like
+            </button>
+          )}
+          {isCreator && (
+            <button type="button" onClick={() => removeBlog(blog)} className="blog-button blog-button--remove">
+              remove
+            </button>
+          )}
+        </div>
+      </article>
     )
   }
 
@@ -266,6 +274,7 @@ const App = () => {
 
   return (
     <div>
+      {/* 5.30: styled blogs step 2 - navbar */}
       <nav className="app-nav">
         <div className="nav-brand">Blog App</div>
         <div className="nav-links">

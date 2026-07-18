@@ -1,25 +1,6 @@
 
 import { useState } from 'react'
 
-const blogStyle = {
-  paddingTop: 10,
-  paddingLeft: 2,
-  border: 'solid',
-  borderWidth: 1,
-  marginBottom: 5,
-}
-
-// [5.11] make the destructive action visually distinct
-const removeButtonStyle = {
-  backgroundColor: '#ff6b6b',
-  color: 'white',
-  border: 'none',
-  padding: '4px 10px',
-  borderRadius: 3,
-  cursor: 'pointer',
-  marginTop: 4,
-}
-
 const Blog = ({ blog, updateBlog, removeBlog, currentUsername }) => {
   const [visible, setVisible] = useState(false)
 
@@ -55,28 +36,35 @@ const Blog = ({ blog, updateBlog, removeBlog, currentUsername }) => {
 
 
   return (
-    <div style={blogStyle} className="blog">
+    <div className="blog">
       <div className="blog-header">
-        {blog.title} {blog.author}{' '}
-        <button type="button" onClick={toggleVisible}>
+        <div>
+          <h3 className="blog-title">{blog.title}</h3>
+          <div className="blog-author">by {blog.author}</div>
+        </div>
+        <button type="button" onClick={toggleVisible} className="blog-toggle">
           {visible ? 'hide' : 'view'}
         </button>
       </div>
       {visible && (
         <div className="blog-details">
-          <div>{blog.url}</div>
-          <div>
-            likes {blog.likes}{' '}
-            <button type="button" onClick={handleLike}>
-              like
-            </button>
+          <div className="blog-url">
+            <a href={blog.url} target="_blank" rel="noreferrer">{blog.url}</a>
           </div>
-          {blog.user && <div>{blog.user.name}</div>}
-          {canDelete && (
-            <button type="button" onClick={handleRemove} style={removeButtonStyle}>
-              remove
-            </button>
-          )}
+          <div className="blog-meta">
+            {blog.user && <div className="blog-owner">added by {blog.user.name}</div>}
+            <div className="blog-actions">
+              <span className="blog-like-count">{blog.likes} likes</span>
+              <button type="button" onClick={handleLike} className="blog-button blog-button--like">
+                like
+              </button>
+              {canDelete && (
+                <button type="button" onClick={handleRemove} className="blog-button blog-button--remove">
+                  remove
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
