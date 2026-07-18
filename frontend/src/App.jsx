@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Link, useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios'
+import './App.css'
 import Blog from './components/Blog'
 import BlogForm from './components/BlogForm'
 import Notification from './components/Notification'
@@ -165,11 +166,11 @@ const App = () => {
     }
     
     return (
-      <div>
+      <div className="login-container">
         <h2>Log in to application</h2>
         <Notification notification={notification} />
-        <form onSubmit={handleLogin}>
-          <div>
+        <form onSubmit={handleLogin} className="login-form">
+          <div className="form-group">
             <label htmlFor="username">username</label>
             <input
               id="username"
@@ -177,9 +178,10 @@ const App = () => {
               value={username}
               name="Username"
               onChange={({ target }) => setUsername(target.value)}
+              className="form-input"
             />
           </div>
-          <div>
+          <div className="form-group">
             <label htmlFor="password">password</label>
             <input
               id="password"
@@ -187,9 +189,10 @@ const App = () => {
               value={password}
               name="Password"
               onChange={({ target }) => setPassword(target.value)}
+              className="form-input"
             />
           </div>
-          <button type="submit">login</button>
+          <button type="submit" className="form-button">login</button>
         </form>
       </div>
     )
