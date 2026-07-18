@@ -202,14 +202,6 @@ const App = () => {
     <div>
       <h2>blogs</h2>
       <Notification notification={notification} />
-      {user && (
-        <p>
-          {user.name} logged in{' '}
-          <button type="button" onClick={handleLogout}>
-            logout
-          </button>
-        </p>
-      )}
 
       {/* [5.10] sort a copy by likes desc; never mutate state in place */}
       {/* [5.11] pass currentUsername so Blog can show its delete button
@@ -274,17 +266,19 @@ const App = () => {
 
   return (
     <div>
-      <nav>
-        <Link to="/">blogs</Link>{' '}
-        {user ? (
-          <>
-            {' '}
-            <Link to="/create">create new</Link>{' '}
-            <button type="button" onClick={handleLogout}>logout</button>
-          </>
-        ) : (
-          <Link to="/login">login</Link>
-        )}
+      <nav className="app-nav">
+        <div className="nav-brand">Blog App</div>
+        <div className="nav-links">
+          <Link to="/" className="nav-link">blogs</Link>
+          {user ? (
+            <>
+              <Link to="/create" className="nav-link">create new</Link>
+              <button type="button" onClick={handleLogout} className="nav-link nav-button">logout</button>
+            </>
+          ) : (
+            <Link to="/login" className="nav-link">login</Link>
+          )}
+        </div>
       </nav>
       <Routes>
         <Route path="/" element={blogList()} />
